@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
 
 function App() {
@@ -6,6 +6,8 @@ function App() {
   const [response, setResponse] = useState(null);
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [error, setError] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // State to manage dropdown visibility
+  const dropdownRef = useRef(null); // Ref for the dropdown container
 
   // Handle input change
   const handleInputChange = (e) => {
@@ -20,6 +22,13 @@ function App() {
     } else {
       setSelectedFilters(selectedFilters.filter((filter) => filter !== value));
     }
+  };
+
+  // Handle filter removal
+  const handleRemoveFilter = (filterToRemove) => {
+    setSelectedFilters(
+      selectedFilters.filter((filter) => filter !== filterToRemove)
+    );
   };
 
   // Handle form submission
@@ -89,6 +98,25 @@ function App() {
     );
   };
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsDropdownOpen(false); // Close the dropdown
+      }
+    };
+
+    // Add event listener when the dropdown is open
+    if (isDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    // Cleanup the event listener
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
   return (
     <div className="App">
       <h1>22BCS10853</h1> {/* Replace with your roll number */}
@@ -109,30 +137,62 @@ function App() {
       {response && (
         <div className="filters">
           <h3>Filters</h3>
-          <label>
-            <input
-              type="checkbox"
-              value="numbers"
-              onChange={handleFilterChange}
-            />
-            Numbers
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              value="alphabets"
-              onChange={handleFilterChange}
-            />
-            Alphabets
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              value="highest_alphabet"
-              onChange={handleFilterChange}
-            />
-            Highest Alphabet
-          </label>
+          <div className="multi-select" ref={dropdownRef}>
+            <div
+              className="selected-filters"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            >
+              {selectedFilters.length > 0 ? (
+                selectedFilters.map((filter) => (
+                  <div key={filter} className="filter-chip">
+                    {filter}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent dropdown from opening
+                        handleRemoveFilter(filter);
+                      }}
+                      className="remove-filter"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <span>Select filters</span>
+              )}
+            </div>
+            {isDropdownOpen && (
+              <div className="dropdown">
+                <label>
+                  <input
+                    type="checkbox"
+                    value="numbers"
+                    checked={selectedFilters.includes("numbers")}
+                    onChange={handleFilterChange}
+                  />
+                  Numbers
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    value="alphabets"
+                    checked={selectedFilters.includes("alphabets")}
+                    onChange={handleFilterChange}
+                  />
+                  Alphabets
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    value="highest_alphabet"
+                    checked={selectedFilters.includes("highest_alphabet")}
+                    onChange={handleFilterChange}
+                  />
+                  Highest Alphabet
+                </label>
+              </div>
+            )}
+          </div>
         </div>
       )}
       {response && renderFilteredResponse()}
